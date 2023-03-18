@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -74,4 +75,26 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query("update Member m set m.age =m.age +1 where m.age >=:age ")
     int bulkAgePlus(@Param("age") int age);
 
+
+    //JPQL 페치 조인
+    @Query("select m from Member m join fetch m.team ")
+    List<Member> findMemberFetchJoin();
+
+
+    //스프링 데이터 JPA는 JPA가 제공하는 엔티티 그래프 기능을 편리하게 사용하게 도와준다. 이 기능을
+    //사용하면 JPQL 없이 페치 조인을 사용할 수 있다. (JPQL + 엔티티 그래프도 가능)
+    //EntityGraph
+
+    //공통 메시더 오버라이드
+    @Override
+    @EntityGraph(attributePaths = {"team"})
+    List<Member> findAll();
+
+    //JPQL + 엔티티 그래프
+    @EntityGraph(attributePaths = {"team"})
+    @Query("select m from Member m")
+    List<Member> findMemberEntityGraph();
+
+    @EntityGraph(attributePaths = {"team"})
+    List<Member> findEntityGraphByUsername(String username);
 }

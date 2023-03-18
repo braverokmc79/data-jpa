@@ -1,6 +1,7 @@
 package study.datajpa.repository;
 
 import org.assertj.core.api.Assertions;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.entity.Member;
 import study.datajpa.entity.Team;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceUnitUtil;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,6 +30,9 @@ class MemberRepositoryTest {
     @Autowired
     TeamRepository teamRepository;
 
+
+    @PersistenceContext
+    EntityManager em;
 
     @Test
     public void testMember(){
@@ -187,6 +194,39 @@ class MemberRepositoryTest {
 
         //then
         Assertions.assertThat(resultCount).isEqualTo(3);
+    }
+
+
+
+    @Test
+    public void findMemberLazy() throws Exception {
+        //given
+        //member1 -> teamA
+        //member2 -> teamB
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+        teamRepository.save(teamA);
+        teamRepository.save(teamB);
+        memberRepository.save(new Member("member1", 10, teamA));
+        memberRepository.save(new Member("member2", 20, teamB));
+        em.flush();
+        em.clear();
+        //when
+        List<Member> members = memberRepository.findAll();
+        //then
+        for (Member member : members) {
+
+            System.out.println("시작============================================================");
+            member.getTeam().getName();
+            // 다음과 같이 지연 로딩 여부를 확인할 수 있다
+            //Hibernate 기능으로 확인
+            Hibernate.initialize(member.getTeam());
+
+            //JPA 표준 방법으로 확인
+            PersistenceUnitUtil util =  em.getEntityManagerFactory().getPersistenceUnitUtil();
+            System.out.println( "isLoaded : " + util.isLoaded(member.getTeam()) );
+            System.out.println("끝============================================================");
+        }
     }
 
 
